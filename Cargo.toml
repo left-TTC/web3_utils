@@ -2,6 +2,9 @@
 name = "left_utils"
 version = "0.1.1"
 edition = "2021"
+authors = ["Your Name <leftear1321@gmail.com>"]
+description = "web3 domain utils"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 proc-macro2 = "1.0.94"
