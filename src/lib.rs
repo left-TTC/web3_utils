@@ -8,25 +8,19 @@ use std::str::FromStr;
 #[proc_macro]
 pub fn declare_central_state(input: TokenStream) -> TokenStream {
     let program_id_str = parse_macro_input!(input as LitStr);
-    let program_id = program_id_str.value();
-
-    let pubkey = Pubkey::from_str(&program_id).expect("Invalid program ID");
-    let pubkey_bytes = pubkey.to_bytes();
-
-    let (central_state, central_state_nonce) = Pubkey::find_program_address(&[&pubkey_bytes], &pubkey);
-    let central_state_bytes = central_state.to_bytes();
+    let program_id = Pubkey::from_str(&program_id_str.value()).expect("Invalid program ID");
+    let (central_state, nonce) = Pubkey::find_program_address(&[&program_id.to_bytes()], &program_id);
 
     let expanded = quote! {
-        pub mod central_state {
-            use anchor_lang::solana_program::pubkey::Pubkey;
-
-            pub static KEY_BYTES: [u8; 32] = [#(#central_state_bytes),*];
-            pub static KEY: Pubkey = Pubkey::new_from_array(KEY_BYTES);
-            pub static NONCE: u8 = #central_state_nonce;
-            pub static SIGNER_SEEDS: [&'static [u8]; 2] = [&super::ID_BYTES, &[NONCE]];
-        }
-
-        pub static ID_BYTES: [u8; 32] = [#(#pubkey_bytes),*];
+        /// Pre-computed central state PDA
+        pub const CENTRAL_STATE_PDA: anchor_lang::solana_program::pubkey::Pubkey = 
+            anchor_lang::solana_program::pubkey::Pubkey::new_from_array(#central_state);
+            
+        /// Nonce for central state PDA
+        pub const CENTRAL_STATE_NONCE: u8 = #nonce;
+        
+        /// Program ID bytes
+        pub const PROGRAM_ID_BYTES: [u8; 32] = [#(#program_id.to_bytes()),*];
     };
 
     TokenStream::from(expanded)
