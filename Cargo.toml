@@ -1,16 +1,13 @@
 [package]
 name = "left_utils"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
-authors = ["Your Name <leftear1321@gmail.com>"]
+authors = ["left-TTC <leftear1321@gmail.com>"]
 description = "web3 domain utils"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-proc-macro2 = "1.0.94"
-quote = "1.0.40"
 anchor-lang = "0.30.1"
-syn = {version = "2.0.100", features = ["full"]}
 
 [lib]
-proc-macro = true
+proc-macro = false

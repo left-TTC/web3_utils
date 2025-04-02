@@ -1,36 +1,34 @@
-use proc_macro::TokenStream;
-use quote::quote;
-use anchor_lang::solana_program::pubkey::Pubkey;
-use syn::{parse_macro_input, LitStr};
-use std::str::FromStr;
+use anchor_lang::solana_program::hash::hashv;
+use anchor_lang::prelude::*;
 
+pub const HASH_PREFIX: &str = "WEB3 Name Service";
 
-#[proc_macro]
-pub fn declare_central_state(input: TokenStream) -> TokenStream {
-    let program_id_str = parse_macro_input!(input as LitStr);
-    let program_id = Pubkey::from_str(&program_id_str.value()).expect("Invalid program ID");
-    let (central_state, nonce) = Pubkey::find_program_address(&[&program_id.to_bytes()], &program_id);
-
-    // 转换为字节数组
-    let central_state_bytes = central_state.to_bytes();
-    let program_id_bytes = program_id.to_bytes();
-
-    let expanded = quote! {
-        pub mod central_state {
-            use anchor_lang::solana_program::pubkey::Pubkey;
-
-            pub const KEY_BYTES: [u8; 32] = [#(#central_state_bytes),*];
-            pub const KEY: Pubkey = Pubkey::new_from_array(KEY_BYTES);
-            pub const NONCE: u8 = #nonce;
-            
-            pub fn signer_seeds() -> [&'static [u8]; 2] {
-                [&super::PROGRAM_ID_BYTES, &[NONCE]]
-            }
-        }
-
-        pub const PROGRAM_ID_BYTES: [u8; 32] = [#(#program_id_bytes),*];
-    };
-
-    TokenStream::from(expanded)
+pub fn get_hashed_name(name: &str) -> Vec<u8>{
+    hashv(&[(HASH_PREFIX.to_owned() + name).as_bytes()])
+        .as_ref()
+        .to_vec()
 }
+
+
+pub fn get_PDA_key(
+    program_id: &Pubkey,
+    hashed_name: Vec<u8>,
+    root_opt: Option<&Pubkey>,
+) -> (Pubkey, Vec<u8>) {        
+    let mut seeds_vec: Vec<u8> = hashed_name;
+
+    //root domain(when create a root domian,use default)
+    let root_domian = root_opt.cloned().unwrap_or_default();
+    //add root to the seed
+    for b in root_domian.to_bytes() {
+        seeds_vec.push(b);
+    }
+
+    let (name_account_key, bump) =
+        Pubkey::find_program_address(&seeds_vec.chunks(32).collect::<Vec<&[u8]>>(), program_id);
+    seeds_vec.push(bump);
+
+    (name_account_key, seeds_vec)
+}
+
 
